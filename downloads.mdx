@@ -1,0 +1,84 @@
+---
+title: "Downloads"
+description: "SDKs, plugins, and integration apps for BoothZen."
+---
+
+import ManageApiKeysCard from '/snippets/manage-api-keys-card.mdx'
+
+# Downloads
+
+Every official BoothZen integration — pick the channel that matches your stack
+and install in one click. Every download link here is the canonical, versioned
+release from the upstream repo; CI re-checks every URL on every commit and on a
+weekly cron, so broken links never reach this page.
+
+<CardGroup cols={2}>
+  <Card title="Laravel SDK" icon="laravel" href="https://packagist.org/packages/boothzen/laravel-sdk">
+    `composer require boothzen/laravel-sdk`
+  </Card>
+  <Card title="WordPress plugin (v0.1.0)" icon="wordpress" href="https://github.com/leeashcroft6126/boothzen-wordpress-plugin/releases/download/v0.1.0/boothzen.zip">
+    Download `boothzen.zip` — 4 blocks, 4 shortcodes, Elementor + Divi bridges.
+  </Card>
+  <Card title="Joomla 5 module (v0.1.0)" icon="j" href="https://github.com/leeashcroft6126/boothzen-joomla-module/releases/download/v0.1.0/mod_boothzen.zip">
+    Download `mod_boothzen.zip` — embed helper + 7 module params.
+  </Card>
+  <Card title="Zapier (private beta)" icon="bolt" href="mailto:operations@redrawtravel.com?subject=BoothZen Zapier beta invite">
+    Request a beta invite.
+  </Card>
+  <Card title="Make.com module (v0.1.0)" icon="m" href="https://github.com/leeashcroft6126/boothzen-make/releases/download/v0.1.0/boothzen-make-v0.1.0.zip">
+    Download `boothzen-make-v0.1.0.zip`.
+  </Card>
+</CardGroup>
+
+## Laravel SDK
+
+A Saloon v4 connector covering 8 API resources with a built-in webhook
+signature-verification helper. Targets PHP 8.1–8.4 and Laravel 10 / 11 / 12.
+
+- **Install:** `composer require boothzen/laravel-sdk`
+- **Packagist:** [packagist.org/packages/boothzen/laravel-sdk](https://packagist.org/packages/boothzen/laravel-sdk)
+- **Source:** [github.com/leeashcroft6126/boothzen-laravel-sdk](https://github.com/leeashcroft6126/boothzen-laravel-sdk)
+
+## WordPress plugin
+
+Four Gutenberg blocks, four classic shortcodes, and bridge widgets for both
+Elementor and Divi. Drop-in for any WordPress 6.x site running PHP 8.1+.
+
+- **Download:** [boothzen.zip (v0.1.0)](https://github.com/leeashcroft6126/boothzen-wordpress-plugin/releases/download/v0.1.0/boothzen.zip)
+- **Source:** [github.com/leeashcroft6126/boothzen-wordpress-plugin](https://github.com/leeashcroft6126/boothzen-wordpress-plugin)
+- **WP.org listing:** pending review — install via the GitHub release zip until the WordPress.org plugin directory listing is approved.
+
+## Joomla 5 module
+
+Native Joomla 5 module wrapping the BoothZen embed helper with 7 configurable
+module params. Compatible with the Joomla update manifest so site admins get
+in-CMS update prompts when a new version ships.
+
+- **Download:** [mod_boothzen.zip (v0.1.0)](https://github.com/leeashcroft6126/boothzen-joomla-module/releases/download/v0.1.0/mod_boothzen.zip)
+- **Update manifest:** [joomla-mod-update.xml](https://github.com/leeashcroft6126/boothzen-joomla-module/releases/download/v0.1.0/joomla-mod-update.xml)
+- **Source:** [github.com/leeashcroft6126/boothzen-joomla-module](https://github.com/leeashcroft6126/boothzen-joomla-module)
+- **JED listing:** pending review — install via the GitHub release zip until the Joomla Extensions Directory listing is approved.
+
+## Zapier app
+
+The BoothZen Zapier app is currently in **private beta**. Zapier's public app
+directory requires ≥10 active users and ≥30 days of usage before a listing goes
+public (see `BETA_RECRUITMENT.md` in the Zapier repo for the gating policy from
+Phase 147-05). In the meantime we'll send you an invite link directly.
+
+- **Request invite:** [operations@redrawtravel.com](mailto:operations@redrawtravel.com?subject=BoothZen%20Zapier%20beta%20invite)
+- **Source:** [github.com/leeashcroft6126/boothzen-zapier](https://github.com/leeashcroft6126/boothzen-zapier)
+
+## Make.com module
+
+A complete Make.com (formerly Integromat) app packaged as an imljson tree.
+There is no public Make.com app-submission CLI yet — paste the imljson tree
+into the Make.com Apps Editor on your operator account.
+
+- **Download:** [boothzen-make-v0.1.0.zip](https://github.com/leeashcroft6126/boothzen-make/releases/download/v0.1.0/boothzen-make-v0.1.0.zip)
+- **Source:** [github.com/leeashcroft6126/boothzen-make](https://github.com/leeashcroft6126/boothzen-make)
+- **Make.com directory:** pending operator submission via the Apps Editor.
+
+## Need an API key?
+
+<ManageApiKeysCard />

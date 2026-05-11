@@ -1,0 +1,69 @@
+name: Link Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly link-rot sweep — Monday 06:00 UTC
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  linkcheck:
+    name: Lychee link check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore lychee cache
+        uses: actions/cache@v4
+        with:
+          path: .lycheecache
+          key: cache-lychee-${{ github.sha }}
+          restore-keys: cache-lychee-
+
+      - name: Run lychee (push + PR)
+        if: github.event_name != 'schedule'
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --exclude-mail
+            --cache
+            --max-cache-age 1d
+            --accept '200,206,429'
+            '**/*.mdx'
+            '**/*.md'
+            'docs.json'
+          fail: true
+
+      - name: Run lychee (weekly cron)
+        id: lychee_cron
+        if: github.event_name == 'schedule'
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --exclude-mail
+            --cache
+            --max-cache-age 1d
+            --accept '200,206,429'
+            '**/*.mdx'
+            '**/*.md'
+            'docs.json'
+          output: ./lychee/out.md
+          fail: false
+
+      - name: Open issue on broken links (weekly cron only)
+        if: github.event_name == 'schedule' && steps.lychee_cron.outputs.exit_code != '0'
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: 'Link Check Report (weekly cron)'
+          content-filepath: ./lychee/out.md
+          labels: link-check, automated
