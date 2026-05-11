@@ -1,0 +1,46 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "BoothZen",
+  "theme": "mint",
+  "colors": {
+    "primary": "#5b21b6",
+    "light": "#7c3aed",
+    "dark": "#4c1d95"
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "favicon": "/favicon.svg",
+  "openapi": "https://app.boothzen.com/api/v1/openapi.json",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["index", "quickstart", "authentication"]
+          },
+          {
+            "group": "Reference",
+            "pages": ["webhooks-reference", "error-codes", "rate-limits", "changelog"]
+          },
+          {
+            "group": "Downloads",
+            "pages": ["downloads"]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "openapi": "https://app.boothzen.com/api/v1/openapi.json"
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/leeashcroft6126"
+    }
+  }
+}
