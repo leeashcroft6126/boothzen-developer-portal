@@ -1,49 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://developers.boothzen.com/</loc>
+    <loc>https://developer.boothzen.com/</loc>
     <lastmod>2026-05-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://developers.boothzen.com/quickstart</loc>
+    <loc>https://developer.boothzen.com/quickstart</loc>
     <lastmod>2026-05-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://developers.boothzen.com/authentication</loc>
+    <loc>https://developer.boothzen.com/authentication</loc>
     <lastmod>2026-05-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://developers.boothzen.com/webhooks-reference</loc>
+    <loc>https://developer.boothzen.com/webhooks-reference</loc>
     <lastmod>2026-05-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://developers.boothzen.com/error-codes</loc>
+    <loc>https://developer.boothzen.com/error-codes</loc>
     <lastmod>2026-05-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://developers.boothzen.com/rate-limits</loc>
+    <loc>https://developer.boothzen.com/rate-limits</loc>
     <lastmod>2026-05-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://developers.boothzen.com/changelog</loc>
+    <loc>https://developer.boothzen.com/changelog</loc>
     <lastmod>2026-05-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://developers.boothzen.com/downloads</loc>
+    <loc>https://developer.boothzen.com/downloads</loc>
     <lastmod>2026-05-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

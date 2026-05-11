@@ -1,12 +1,12 @@
 # BoothZen Developer Portal
 
-**Live site:** <https://developers.boothzen.com>
+**Live site:** <https://developer.boothzen.com>
 
 [![Link Check](https://github.com/leeashcroft6126/boothzen-developer-portal/actions/workflows/link-check.yml/badge.svg)](https://github.com/leeashcroft6126/boothzen-developer-portal/actions/workflows/link-check.yml)
 
 Mintlify Git-synced documentation for the BoothZen booking platform — REST API,
 webhooks, SDKs, and plugins. This repo is the single source of truth and
-auto-deploys to `developers.boothzen.com` on every push to `main`.
+auto-deploys to `developer.boothzen.com` on every push to `main`.
 
 It is intentionally separate from the main application repo so docs can ship
 on their own cadence. Part of the BoothZen v14.0 milestone (phase 148).
@@ -58,7 +58,7 @@ operator action — surfaced as an operator checkpoint in plan **148-05**.
    `leeashcroft6126/boothzen-developer-portal`, choose `main` as the deploy
    branch, save. The first build will trigger automatically.
 3. **Add the custom domain.** In the Mintlify dashboard's **Domains** section,
-   click **Add custom domain**, enter `developers.boothzen.com`, and copy the
+   click **Add custom domain**, enter `developer.boothzen.com`, and copy the
    CNAME target Mintlify provides (e.g. `cname.mintlify.app`).
 4. **Add the Cloudflare CNAME.** In Cloudflare DNS for `boothzen.com`, add:
    - Type: `CNAME`

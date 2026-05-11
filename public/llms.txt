@@ -6,15 +6,15 @@ The API is hosted at https://app.boothzen.com/api/v1 (and the equivalent vanity 
 
 ## Getting Started
 
-- [Quickstart](https://developers.boothzen.com/quickstart): Issue a test key and make your first API call in 5 minutes
-- [Authentication](https://developers.boothzen.com/authentication): API-key Bearer tokens and OAuth 2.1 PKCE flow
+- [Quickstart](https://developer.boothzen.com/quickstart): Issue a test key and make your first API call in 5 minutes
+- [Authentication](https://developer.boothzen.com/authentication): API-key Bearer tokens and OAuth 2.1 PKCE flow
 
 ## Reference
 
-- [Webhooks Reference](https://developers.boothzen.com/webhooks-reference): 13 event types, Stripe-pattern HMAC verification with timestamp tolerance, retry schedule
-- [Error Codes](https://developers.boothzen.com/error-codes): Error envelope, ID prefixes (bk_, ld_, qt_, inv_, cu_, srv_, un_), money envelope ({amount, currency})
-- [Rate Limits](https://developers.boothzen.com/rate-limits): IETF RateLimit-* response headers, per-key buckets, 429 handling
-- [Changelog](https://developers.boothzen.com/changelog): Versioned release history (v1 contract locked 2026-05-10)
+- [Webhooks Reference](https://developer.boothzen.com/webhooks-reference): 13 event types, Stripe-pattern HMAC verification with timestamp tolerance, retry schedule
+- [Error Codes](https://developer.boothzen.com/error-codes): Error envelope, ID prefixes (bk_, ld_, qt_, inv_, cu_, srv_, un_), money envelope ({amount, currency})
+- [Rate Limits](https://developer.boothzen.com/rate-limits): IETF RateLimit-* response headers, per-key buckets, 429 handling
+- [Changelog](https://developer.boothzen.com/changelog): Versioned release history (v1 contract locked 2026-05-10)
 
 ## Downloads
 
@@ -27,7 +27,7 @@ The API is hosted at https://app.boothzen.com/api/v1 (and the equivalent vanity 
 ## API Reference
 
 - [OpenAPI 3.1 Spec (live)](https://app.boothzen.com/api/v1/openapi.json): Always-current machine-readable contract
-- [Interactive Playground](https://developers.boothzen.com/api-reference): Mintlify-rendered reference with try-it console
+- [Interactive Playground](https://developer.boothzen.com/api-reference): Mintlify-rendered reference with try-it console
 
 ## Optional
 

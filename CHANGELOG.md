@@ -14,6 +14,6 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This repo uses
 - llms.txt + llms-full.txt (llmstxt.org-compliant) for AI crawler discovery.
 - sitemap.xml + robots.txt for traditional search crawlers.
 - OpenGraph + Twitter meta defaults in docs.json.
-- Custom subdomain developers.boothzen.com via Cloudflare CNAME → Mintlify.
+- Custom subdomain developer.boothzen.com via Cloudflare CNAME → Mintlify.
 
 [0.1.0]: https://github.com/leeashcroft6126/boothzen-developer-portal/releases/tag/v0.1.0
