@@ -1,0 +1,717 @@
+# BoothZen Developer Portal
+
+> BoothZen is a multi-tenant booking management platform for photo booth operators. This portal documents the public REST API v1, OAuth 2.1 flow, webhook events, error envelope, rate limits, and the official SDKs and plugins.
+
+The API is hosted at https://app.boothzen.com/api/v1 (and the equivalent vanity host https://api.boothzen.com/v1). The OpenAPI 3.1 specification is served live at https://app.boothzen.com/api/v1/openapi.json.
+
+## Getting Started
+
+- [Quickstart](https://developers.boothzen.com/quickstart): Issue a test key and make your first API call in 5 minutes
+- [Authentication](https://developers.boothzen.com/authentication): API-key Bearer tokens and OAuth 2.1 PKCE flow
+
+## Reference
+
+- [Webhooks Reference](https://developers.boothzen.com/webhooks-reference): 13 event types, Stripe-pattern HMAC verification with timestamp tolerance, retry schedule
+- [Error Codes](https://developers.boothzen.com/error-codes): Error envelope, ID prefixes (bk_, ld_, qt_, inv_, cu_, srv_, un_), money envelope ({amount, currency})
+- [Rate Limits](https://developers.boothzen.com/rate-limits): IETF RateLimit-* response headers, per-key buckets, 429 handling
+- [Changelog](https://developers.boothzen.com/changelog): Versioned release history (v1 contract locked 2026-05-10)
+
+## Downloads
+
+- [Laravel SDK on Packagist](https://packagist.org/packages/boothzen/laravel-sdk): composer require boothzen/laravel-sdk
+- [WordPress plugin (v0.1.0)](https://github.com/leeashcroft6126/boothzen-wordpress-plugin/releases/download/v0.1.0/boothzen.zip)
+- [Joomla 5 module (v0.1.0)](https://github.com/leeashcroft6126/boothzen-joomla-module/releases/download/v0.1.0/mod_boothzen.zip)
+- [Make.com module (v0.1.0)](https://github.com/leeashcroft6126/boothzen-make/releases/download/v0.1.0/boothzen-make-v0.1.0.zip)
+- [Zapier app (private beta)](https://github.com/leeashcroft6126/boothzen-zapier): Email operations@redrawtravel.com to request an invite
+
+## API Reference
+
+- [OpenAPI 3.1 Spec (live)](https://app.boothzen.com/api/v1/openapi.json): Always-current machine-readable contract
+- [Interactive Playground](https://developers.boothzen.com/api-reference): Mintlify-rendered reference with try-it console
+
+## Optional
+
+- [Main app](https://app.boothzen.com): BoothZen operator dashboard (this is where API keys are issued at /admin/settings/api-keys)
+- [Marketing site](https://boothzen.com)
+
+---
+
+# index
+
+
+# Build on BoothZen
+
+BoothZen is a multi-tenant SaaS booking platform for photo booth and event-rental
+operators. This portal documents the public REST API, webhooks, official SDKs,
+and CMS plugins so you can integrate bookings, payments, and customer flows into
+your own product.
+
+
+  
+    Issue your first API key, make a test request, and receive a webhook in
+    under 5 minutes.
+  
+  
+    Bearer tokens, scopes, key rotation, and tenant-scoped access patterns.
+  
+  
+    Full OpenAPI 3.1 reference, auto-synced from the live spec — try every
+    endpoint in the in-browser playground.
+  
+  
+    Event catalogue, signature verification, retry semantics, and replay
+    tooling.
+  
+  
+    Every documented error, what it means, and how to recover.
+  
+  
+    Per-tenant quotas, burst windows, and `Retry-After` handling.
+  
+  
+    Official SDKs (Laravel, JS) and CMS plugins (WordPress, Joomla, Drupal).
+  
+  <Card
+    title="Manage API keys"
+    icon="up-right-from-square"
+    href="https://app.boothzen.com/admin/settings/api-keys"
+  >
+    Open the BoothZen admin to create, rotate, or revoke API keys for your
+    tenant.
+  
+
+
+## Need help?
+
+Email [operations@redrawtravel.com](mailto:operations@redrawtravel.com) or open
+an issue on the [portal repo](https://github.com/leeashcroft6126/boothzen-developer-portal).
+
+---
+
+# quickstart
+
+
+This guide walks you from a fresh BoothZen account to a successful `GET /api/v1/bookings` call in under five minutes. No tooling beyond `curl` is required.
+
+## Step 1 — Issue a test API key
+
+API keys are managed in the BoothZen app. The portal never asks for credentials directly — every "manage keys" link in this documentation deep-links to the single source of truth in the admin UI.
+
+
+  Issue a `bz_test_*` key with the `read:bookings` scope. The full secret is shown **once** on creation — copy it now.
+
+
+Keys come in two flavours:
+
+- `bz_live_*` — production data, real money, real bookings.
+- `bz_test_*` — sandbox data, fully isolated. Recommended for the first call.
+
+
+The mode is bound to the key itself: a `bz_test_*` key cannot read live data, and vice versa. There is no `?mode=` flag to toggle.
+
+
+## Step 2 — Make your first call
+
+Export your key and call the bookings list endpoint:
+
+```bash
+export BZ_KEY="bz_test_..."
+
+curl -sS https://app.boothzen.com/api/v1/bookings \
+  -H "Authorization: Bearer ${BZ_KEY}"
+```
+
+Or, with the key inline:
+
+```bash
+curl -sS https://app.boothzen.com/api/v1/bookings \
+  -H "Authorization: Bearer bz_test_replace_me_with_your_real_key"
+```
+
+A successful response looks like this:
+
+```json
+{
+  "data": [
+    {
+      "id": "bk_01HX9K8VAAYZWJ3M2P4Q5R6T7N",
+      "status": "confirmed",
+      "starts_at": "2026-06-14T13:00:00Z",
+      "ends_at": "2026-06-14T17:00:00Z",
+      "customer_id": "cu_01HX9K7H3D5G2N8Q4P6R7T9V1B",
+      "total": { "amount": 45000, "currency": "GBP" }
+    }
+  ],
+  "next_cursor": null
+}
+```
+
+Three things worth noting in that response:
+
+1. **Prefixed IDs.** `bk_` is a booking, `cu_` is a customer. Every public resource has a stable two-or-three-letter prefix (`bk_`, `ld_`, `qt_`, `inv_`, `cu_`, `srv_`, `un_`).
+2. **Money envelope.** `total` is always `{ amount, currency }` with `amount` in integer **minor units** (45000 = £450.00).
+3. **Cursor pagination.** `next_cursor` is `null` because this account is empty. When there's more, pass it back as `?cursor=...&limit=25`.
+
+## Step 3 — Read the API Reference
+
+Every endpoint, request body, query parameter, and response shape is documented from the live OpenAPI 3.1 spec at [`https://app.boothzen.com/api/v1/openapi.json`](https://app.boothzen.com/api/v1/openapi.json). The interactive playground in this portal lets you "Try it" against your test key without leaving the page.
+
+
+  Browse all 15 paths with live request examples and response schemas.
+
+
+## Step 4 — Next steps
+
+
+  
+    API-key Bearer auth and OAuth 2.1 PKCE for third-party apps.
+  
+  
+    Subscribe to the 13 platform events and verify signatures.
+  
+  
+    Error envelope, idempotency, and the standard HTTP code surface.
+  
+  
+    SDKs, WordPress + Joomla plugins, Zapier and Make.com integrations.
+  
+
+
+---
+
+# authentication
+
+
+The BoothZen public API accepts two equivalent credential types. Both grant access to the same `/api/v1/*` surface and share the same response shapes, rate-limit headers, and error envelopes.
+
+| Credential          | Best for                          | Manage in                                          |
+| ------------------- | --------------------------------- | -------------------------------------------------- |
+| API key (Bearer)    | First-party scripts, server-to-server | [admin/settings/api-keys](https://app.boothzen.com/admin/settings/api-keys) |
+| OAuth 2.1 (PKCE)    | Third-party apps acting on behalf of operators | [admin/settings/oauth-apps](https://app.boothzen.com/admin/settings/oauth-apps) |
+
+## API keys (Bearer)
+
+Send the key in the `Authorization` header on every request:
+
+```bash
+curl https://app.boothzen.com/api/v1/bookings \
+  -H "Authorization: Bearer bz_live_..."
+```
+
+Two prefixes, one binding:
+
+- `bz_live_*` — live data, real bookings, real payments.
+- `bz_test_*` — sandbox data, isolated from live. Test keys cannot read live resources and live keys cannot read test resources. There is no `?mode=` toggle.
+
+Keys are SHA-256 hashed at rest. The full secret is shown **once** on creation. If lost, revoke and re-issue from the admin UI — there is no recovery.
+
+
+  Create, scope, rotate, and revoke keys. Every action here is audit-logged.
+
+
+### Scopes
+
+Each key carries a set of scopes (for example `read:bookings`, `write:bookings`, `read:customers`). The exact list of scopes per endpoint is part of the OpenAPI contract — see the `x-required-scopes` extension on each path in the [live spec](https://app.boothzen.com/api/v1/openapi.json) or in the [API Reference](/api-reference) tab. The portal does not duplicate this list; it changes with the spec.
+
+A request with a key that lacks the required scope returns `403` with a Stripe-shape error envelope (see [Error Codes](/error-codes)).
+
+### Inspecting the active key
+
+Every response includes:
+
+- `X-BoothZen-Scope` — the scopes granted to the calling key.
+- `X-Request-Id` — opaque request ID for support tickets.
+
+## OAuth 2.1 (PKCE) for third-party apps
+
+If you're building an app that other BoothZen operators will install (for example a calendar sync, a CRM bridge, or a marketplace), use OAuth. PKCE is **required** — there is no confidential-client flow.
+
+### Endpoints
+
+| Purpose         | URL                                                |
+| --------------- | -------------------------------------------------- |
+| Authorize       | `https://app.boothzen.com/oauth/authorize`         |
+| Token exchange  | `https://app.boothzen.com/oauth/token`             |
+| Refresh         | `https://app.boothzen.com/oauth/token` (grant_type=refresh_token) |
+
+### Flow at a glance
+
+1. Generate a PKCE `code_verifier` and SHA-256 `code_challenge`.
+2. Redirect the operator to `/oauth/authorize?response_type=code&client_id=...&redirect_uri=...&scope=...&state=...&code_challenge=...&code_challenge_method=S256`.
+3. Exchange the returned `code` for an access token at `/oauth/token` with the `code_verifier`.
+4. Use the access token in the **same** `Authorization: Bearer ...` header as an API key — OAuth tokens are interchangeable with API keys on `/api/v1/*`.
+5. Refresh tokens **rotate** on every exchange. Always store the latest one and discard the previous.
+
+
+  Create a client, set redirect URIs, and copy your `client_id`. Public clients (mobile, SPA) do not get a secret — PKCE is mandatory.
+
+
+## Two equivalent hostnames
+
+The public API is reachable under two equivalent base URLs:
+
+| Host pattern                              | When to use                                                              |
+| ----------------------------------------- | ------------------------------------------------------------------------ |
+| `https://app.boothzen.com/api/v1/*`       | The canonical host. Works for every tenant. Used by all docs examples. |
+| `https://{slug}.boothzen.com/api/v1/*`    | The tenant-branded host. Useful for white-label integrations where the request URL itself should reveal the operator. |
+
+Both resolve the calling tenant from the API key, not the hostname — the slug-host is purely cosmetic. All response shapes, rate limits, and scopes are identical.
+
+There is also a legacy short form, `https://api.boothzen.com/v1/*`, which is equivalent to `app.boothzen.com/api/v1/*`. New code should prefer the `app.boothzen.com` form.
+
+---
+
+# webhooks-reference
+
+
+Webhooks let your application react to BoothZen events in real time — a new booking, a payment received, a quote accepted. BoothZen signs every delivery so you can prove the payload came from us and hasn't been tampered with.
+
+## Subscribe
+
+Webhook subscriptions are created and managed in the admin UI. Each subscription has a target URL, an event filter (`*` or an explicit list), and its own signing secret.
+
+
+  Create endpoints, choose events, copy the signing secret. The full `whsec_*` secret is shown **once** on creation — store it somewhere safe.
+
+
+Signing secrets have the format `whsec_` (62 characters total). Each subscription has its own secret; rotating a secret is a destructive action that invalidates the previous one.
+
+## Events
+
+Thirteen events fan out from the BoothZen observer chain. Every event delivers a JSON body with a top-level `id`, `type`, `created`, and `data.object` (the resource snapshot at the moment of the event).
+
+
+  
+    | Event                      | Fires when                                                  | Payload root                    |
+    | -------------------------- | ----------------------------------------------------------- | ------------------------------- |
+    | `booking.created`          | A new booking is inserted, by any path (admin, widget, API) | `data.object` = full Booking    |
+    | `booking.updated`          | A booking's mutable fields change (notes, dates, services)  | `data.object` = full Booking    |
+    | `booking.status_changed`   | A booking's `status` transitions (e.g. `pending` to `confirmed`) | `data.object` = Booking, `data.previous_attributes.status` = prior value |
+  
+  
+    | Event                | Fires when                                          |
+    | -------------------- | --------------------------------------------------- |
+    | `payment.received`   | Payment recorded against an invoice or booking      |
+    | `payment.refunded`   | Refund issued (full or partial)                     |
+  
+  
+    | Event            | Fires when                                              |
+    | ---------------- | ------------------------------------------------------- |
+    | `lead.created`   | New lead captured (widget, manual, API, embed)          |
+    | `lead.updated`   | Lead status, owner, or notes change                     |
+  
+  
+    | Event               | Fires when                                          |
+    | ------------------- | --------------------------------------------------- |
+    | `customer.created`  | First time a customer record is created             |
+  
+  
+    | Event              | Fires when                                       |
+    | ------------------ | ------------------------------------------------ |
+    | `quote.created`    | A new quote is generated and saved               |
+    | `quote.accepted`   | Customer accepts a quote                         |
+    | `quote.declined`   | Customer declines a quote (or it expires)        |
+  
+  
+    | Event           | Fires when                                       |
+    | --------------- | ------------------------------------------------ |
+    | `invoice.sent`  | Invoice issued to customer                       |
+    | `invoice.paid`  | Invoice marked fully paid                        |
+  
+
+
+The exact shape of `data.object` for each resource is part of the OpenAPI contract. Browse it in the [API Reference](/api-reference) — the webhook resource shape matches the corresponding `GET /api/v1/{resource}/{id}` response.
+
+## Signature verification
+
+Every delivery carries a `BoothZen-Signature` header in Stripe's signature format:
+
+```
+BoothZen-Signature: t=1778530000,v1=5257a869e7ecebeda32affa62cdca3fa51cad7e77a0e56ff536d0ce8e108d8bd
+```
+
+- `t` — Unix timestamp (seconds) when the signature was computed.
+- `v1` — HMAC-SHA256 of the **signed payload string**, encoded as lowercase hex.
+
+The **signed payload string** is:
+
+```
+.
+```
+
+That is: the timestamp, a literal `.`, then the raw request body bytes (do NOT parse and re-serialise — verify against the bytes you received).
+
+### Tolerance window
+
+Reject deliveries where `t` is more than **5 minutes** in the past or future (the same default Stripe uses). This stops replay attacks where an attacker re-POSTs an old signed body.
+
+### Code
+
+
+
+```php PHP
+<?php
+function verify_boothzen_webhook(string $rawBody, string $header, string $secret, int $tolerance = 300): bool {
+    if (!preg_match('/t=(\d+),v1=([a-f0-9]+)/', $header, $m)) return false;
+    [, $t, $v1] = $m;
+    if (abs(time() - (int) $t) > $tolerance) return false;
+    $expected = hash_hmac('sha256', $t . '.' . $rawBody, $secret);
+    return hash_equals($expected, $v1);
+}
+```
+
+```js Node.js
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+export function verifyBoothZenWebhook(rawBody, header, secret, tolerance = 300) {
+  const m = /t=(\d+),v1=([a-f0-9]+)/.exec(header);
+  if (!m) return false;
+  const [, t, v1] = m;
+  if (Math.abs(Date.now() / 1000 - Number(t)) > tolerance) return false;
+  const expected = createHmac('sha256', secret).update(`${t}.${rawBody}`).digest('hex');
+  return timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
+}
+```
+
+
+
+
+  Verify against the **raw** request body. Frameworks that auto-parse JSON (Express, Laravel) reorder keys and strip whitespace — the resulting bytes will not match the signature. Capture the raw body in middleware before any parsing.
+
+
+## Retries
+
+BoothZen retries failed deliveries (non-2xx response or connection error) with exponential backoff:
+
+| Attempt | Delay after previous |
+| ------- | -------------------- |
+| 1       | immediate            |
+| 2       | 1 minute             |
+| 3       | 5 minutes            |
+| 4       | 30 minutes           |
+| 5       | 2 hours              |
+| 6       | 12 hours             |
+
+After **20 consecutive failures** the subscription is auto-disabled and the operator receives an email with a link to re-enable it. Successful deliveries reset the failure counter to zero.
+
+Aim for a sub-3-second response time. Return `2xx` as soon as you've persisted the event; do the heavy work in a background job.
+
+## SDK helper
+
+The official Laravel SDK ships a `SignatureVerifier` helper so you don't have to copy-paste the snippets above into every project.
+
+
+  `composer require boothzen/laravel-sdk` — includes `BoothZen\Sdk\Webhooks\SignatureVerifier` and a Laravel middleware (`boothzen.webhook`) that verifies and rejects invalid deliveries before they reach your controller.
+
+
+---
+
+# error-codes
+
+
+Every `/api/v1/*` error response follows the same envelope. Codes and shapes are stable inside v1; new error types are additive only.
+
+## Error envelope
+
+```json
+{
+  "error": {
+    "type": "validation_error",
+    "code": "invalid_request",
+    "message": "The starts_at field must be a valid ISO-8601 date.",
+    "param": "starts_at",
+    "request_id": "req_01HX9KAVD3JZ7P4M2N5Q6R8T9V"
+  }
+}
+```
+
+| Field         | Always present? | Notes                                                                                       |
+| ------------- | --------------- | ------------------------------------------------------------------------------------------- |
+| `type`        | yes             | Coarse class — e.g. `validation_error`, `authentication_error`, `permission_error`, `rate_limit_error`, `api_error`. |
+| `code`        | yes             | Stable machine-readable code. Branch on this, not `message`.                                |
+| `message`     | yes             | Human-readable, English. Safe to surface in tooling, not to end users.                      |
+| `param`       | 422 only        | The offending field name when the error is a `validation_error`.                            |
+| `request_id`  | yes             | Opaque ID; quote this in support tickets. Also returned as the `X-Request-Id` response header. |
+
+## Standard HTTP codes
+
+| Status | Type                   | When                                                                  |
+| ------ | ---------------------- | --------------------------------------------------------------------- |
+| 400    | `invalid_request_error` | Malformed JSON, unsupported `?api_key=` query, missing `Content-Type`. |
+| 401    | `authentication_error`  | Missing, malformed, revoked, or unknown API key.                       |
+| 403    | `permission_error`      | Key is valid but lacks the required scope, or wrong mode (test key on live resource). |
+| 404    | `invalid_request_error` | Resource does not exist, or belongs to another tenant.                 |
+| 409    | `invalid_request_error` | Idempotency conflict — the same `Idempotency-Key` was used with a **different** body. |
+| 422    | `validation_error`      | Request shape was correct but field values failed validation. `param` names the field. |
+| 429    | `rate_limit_error`      | Per-key rate bucket exhausted. See [Rate Limits](/rate-limits) and `Retry-After`. |
+| 500    | `api_error`             | BoothZen-side fault. Safe to retry with backoff; quote `request_id`.   |
+
+## Conventions
+
+These conventions are constant across every endpoint and every webhook payload.
+
+### Money
+
+```json
+{ "amount": 12500, "currency": "GBP" }
+```
+
+`amount` is an **integer** in the smallest unit of the currency (pence for GBP, cents for USD). `currency` is an ISO-4217 three-letter code, uppercase. Never assume two decimal places — JPY has zero, BHD has three. Always divide by the minor-unit factor for the currency at display time.
+
+### Datetimes
+
+All datetimes are ISO-8601 in UTC with the `Z` suffix:
+
+```
+2026-06-14T13:00:00Z
+```
+
+There are no timezone-naive datetimes anywhere in the API. If you need to display a booking in the operator's local time, fetch the operator's timezone from `GET /api/v1/tenant` (or store it on first install) and convert client-side.
+
+### Resource IDs
+
+Every resource has a stable two-or-three-letter prefix. Treat the full ID as an opaque string — do not parse the part after the prefix.
+
+| Prefix  | Resource     |
+| ------- | ------------ |
+| `bk_`   | Booking      |
+| `ld_`   | Lead         |
+| `qt_`   | Quote        |
+| `inv_`  | Invoice      |
+| `cu_`   | Customer     |
+| `srv_`  | Service      |
+| `un_`   | Unit         |
+
+### Pagination
+
+List endpoints return:
+
+```json
+{
+  "data": [ /* … */ ],
+  "next_cursor": "eyJpZCI6ImJrXzAxSC4uLiJ9"
+}
+```
+
+Pass `next_cursor` back as `?cursor=...&limit=25` to fetch the next page. `next_cursor` is `null` on the final page. Maximum `limit` is `100`; default is `25`.
+
+## Idempotency
+
+`POST` and `PATCH` requests accept an `Idempotency-Key` header. Use a UUIDv4 (or any client-generated unique string up to 255 chars) per **logical operation**.
+
+```bash
+curl -X POST https://app.boothzen.com/api/v1/bookings \
+  -H "Authorization: Bearer bz_live_..." \
+  -H "Idempotency-Key: 8f3a2c10-9d4e-4a76-b21c-bb5a0f6e7d12" \
+  -H "Content-Type: application/json" \
+  -d '{ "service_id": "srv_...", "starts_at": "2026-06-14T13:00:00Z" }'
+```
+
+Replay rules (24-hour cache in Redis, keyed per-tenant + per-API-key):
+
+- **Same key, same body** → the original 2xx response is returned. The side-effect (booking creation, payment capture) happens exactly once.
+- **Same key, different body** → `422` with `code: "idempotency_mismatch"`. Pick a new key.
+- **Different key** → treated as a fresh request.
+
+Idempotency keys expire 24 hours after first use. Use a fresh key for any new logical operation.
+
+---
+
+# rate-limits
+
+
+BoothZen enforces rate limits per API key — not per IP, not per tenant. One caller cannot exhaust another operator's budget by sharing a network. Limits apply identically to API keys and OAuth access tokens.
+
+## Headers
+
+Every `/api/v1/*` response — including errors — carries the [IETF RateLimit](https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/) headers:
+
+| Header               | Meaning                                                                  |
+| -------------------- | ------------------------------------------------------------------------ |
+| `RateLimit-Limit`    | Maximum requests permitted in the current window.                        |
+| `RateLimit-Remaining`| Requests left in the current window.                                     |
+| `RateLimit-Reset`    | Seconds until the window resets.                                         |
+
+Example response headers on a successful call:
+
+```
+HTTP/1.1 200 OK
+RateLimit-Limit: 600
+RateLimit-Remaining: 597
+RateLimit-Reset: 41
+X-BoothZen-Scope: read:bookings
+X-Request-Id: req_01HX9KAVD3JZ7P4M2N5Q6R8T9V
+Content-Type: application/json
+```
+
+## Buckets
+
+Each API key has its own bucket. The default rate is **600 requests per minute** per key (with a secondary burst limit of 60 requests per second). Internal hosts and admin tooling are not counted against your bucket — only `/api/v1/*` traffic authenticated with your key.
+
+If you need a higher limit for a legitimate use case, contact support with the `X-Request-Id` of a representative request and your average-and-peak RPS needs.
+
+The current numbers for any given key are always authoritative in the response headers — read `RateLimit-Limit` on any successful call rather than hard-coding the default. See the [API Reference](/api-reference) for live "Try it" calls.
+
+## 429 handling
+
+When the bucket is empty, the API returns `429` with a `Retry-After` header (seconds) **and** the standard rate-limit headers:
+
+```
+HTTP/1.1 429 Too Many Requests
+Retry-After: 14
+RateLimit-Limit: 600
+RateLimit-Remaining: 0
+RateLimit-Reset: 14
+Content-Type: application/json
+
+{
+  "error": {
+    "type": "rate_limit_error",
+    "code": "rate_limit_exceeded",
+    "message": "Rate limit exceeded. Retry after 14 seconds.",
+    "request_id": "req_01HX9KAVD3JZ7P4M2N5Q6R8T9V"
+  }
+}
+```
+
+Recommended client behaviour:
+
+1. Honour `Retry-After` if present. Sleep for at least that many seconds.
+2. Otherwise, exponential backoff with jitter — starting at 1s and capping at 60s — until the next attempt succeeds or `RateLimit-Remaining > 0`.
+3. Never retry tighter than `Retry-After`. Aggressive retries dig a deeper hole; the bucket only refills with time.
+
+```js
+async function callWithBackoff(fn, attempt = 0) {
+  const res = await fn();
+  if (res.status !== 429) return res;
+  const retryAfter = Number(res.headers.get('Retry-After')) || Math.min(60, 2 ** attempt);
+  const jitter = Math.random() * 500;
+  await new Promise(r => setTimeout(r, retryAfter * 1000 + jitter));
+  return callWithBackoff(fn, attempt + 1);
+}
+```
+
+For high-volume batch work, parallelise across multiple API keys (one per worker) instead of a single key — limits are per-key, so this scales linearly.
+
+---
+
+# changelog
+
+
+This changelog covers the BoothZen public API (`/api/v1/*`), webhooks, and the developer-facing surface area (SDKs, plugins, portal). It follows [Keep a Changelog](https://keepachangelog.com/) conventions.
+
+
+  Future API changes will be **additive within v1** — new fields, new endpoints, new optional parameters. Breaking changes will ship as `v2` with parallel availability for at least 12 months.
+
+
+## v1.0.0 — 2026-05-10
+
+The v1 contract lock. Everything below was shipped across Phases 140 through 148 and is covered by Spectator contract tests in CI.
+
+### Added
+
+- **Public REST API v1** (Phase 140). 7 resource controllers (bookings, leads, quotes, invoices, customers, services, units) and the availability endpoint. Cursor pagination, prefixed string IDs (`bk_`, `ld_`, `qt_`, `inv_`, `cu_`, `srv_`, `un_`), `{amount, currency}` money envelopes, ISO-8601 UTC datetimes. Stripe-shape error envelopes. IETF `RateLimit-*` headers and per-API-key buckets (600/min).
+- **API key surface** (Phase 140-01). `bz_live_*` and `bz_test_*` Bearer keys with SHA-256-hashed storage, scope enforcement, and full mode isolation. Managed at [admin/settings/api-keys](https://app.boothzen.com/admin/settings/api-keys).
+- **Idempotency** (Phase 140-04). `Idempotency-Key` header on `POST`/`PATCH` with 24h Redis-backed replay cache, keyed per tenant + key.
+- **OAuth 2.1 PKCE** (Phase 141). `/oauth/authorize` + `/oauth/token` endpoints, mandatory PKCE, rotating refresh tokens, tokens interchangeable with API keys on `/api/v1/*`. Apps managed at [admin/settings/oauth-apps](https://app.boothzen.com/admin/settings/oauth-apps).
+- **Webhooks** (Phase 142). 13 fan-out events from 6 observers, Stripe-pattern HMAC-SHA256 signatures (`BoothZen-Signature: t=...,v1=...`), 5-minute tolerance window, 1m–12h exponential-backoff retries, auto-disable after 20 consecutive failures.
+- **Widget SDK polish + full-flow booking widget** (Phase 143).
+- **Laravel SDK** (Phase 144). Published to Packagist as [`boothzen/laravel-sdk`](https://packagist.org/packages/boothzen/laravel-sdk), built on Saloon v4. Includes `SignatureVerifier` helper for webhooks.
+- **WordPress plugin v0.1.0** (Phase 145). Custom post type `bz_booking`, 4 Gutenberg blocks, 4 shortcodes, Elementor + Divi bridges, webhook receiver, WP-CLI commands.
+- **Joomla 5 module v0.1.0** (Phase 146).
+- **Zapier + Make.com integrations** (Phase 147).
+- **Developer portal** at [developers.boothzen.com](https://developers.boothzen.com) (Phase 148). Live OpenAPI 3.1 spec, no spec drift, single source of truth for credentials management deep-linked to the main app.
+
+### Conventions locked in v1
+
+- Money is always `{ amount: , currency:  }`.
+- Datetimes are always ISO-8601 UTC with the `Z` suffix.
+- Resource IDs are always opaque strings with a stable prefix.
+- Pagination is always cursor-based (`?cursor=...&limit=25`, `next_cursor` in body).
+- Errors are always the Stripe-shape envelope (`error.type`, `error.code`, `error.message`, `error.request_id`).
+- Two equivalent hosts: `https://app.boothzen.com/api/v1/*` (canonical) and `https://{slug}.boothzen.com/api/v1/*` (tenant-branded).
+
+---
+
+# downloads
+
+
+import ManageApiKeysCard from '/snippets/manage-api-keys-card.mdx'
+
+# Downloads
+
+Every official BoothZen integration — pick the channel that matches your stack
+and install in one click. Every download link here is the canonical, versioned
+release from the upstream repo; CI re-checks every URL on every commit and on a
+weekly cron, so broken links never reach this page.
+
+
+  
+    `composer require boothzen/laravel-sdk`
+  
+  
+    Download `boothzen.zip` — 4 blocks, 4 shortcodes, Elementor + Divi bridges.
+  
+  
+    Download `mod_boothzen.zip` — embed helper + 7 module params.
+  
+  
+    Request a beta invite.
+  
+  
+    Download `boothzen-make-v0.1.0.zip`.
+  
+
+
+## Laravel SDK
+
+A Saloon v4 connector covering 8 API resources with a built-in webhook
+signature-verification helper. Targets PHP 8.1–8.4 and Laravel 10 / 11 / 12.
+
+- **Install:** `composer require boothzen/laravel-sdk`
+- **Packagist:** [packagist.org/packages/boothzen/laravel-sdk](https://packagist.org/packages/boothzen/laravel-sdk)
+- **Source:** [github.com/leeashcroft6126/boothzen-laravel-sdk](https://github.com/leeashcroft6126/boothzen-laravel-sdk)
+
+## WordPress plugin
+
+Four Gutenberg blocks, four classic shortcodes, and bridge widgets for both
+Elementor and Divi. Drop-in for any WordPress 6.x site running PHP 8.1+.
+
+- **Download:** [boothzen.zip (v0.1.0)](https://github.com/leeashcroft6126/boothzen-wordpress-plugin/releases/download/v0.1.0/boothzen.zip)
+- **Source:** [github.com/leeashcroft6126/boothzen-wordpress-plugin](https://github.com/leeashcroft6126/boothzen-wordpress-plugin)
+- **WP.org listing:** pending review — install via the GitHub release zip until the WordPress.org plugin directory listing is approved.
+
+## Joomla 5 module
+
+Native Joomla 5 module wrapping the BoothZen embed helper with 7 configurable
+module params. Compatible with the Joomla update manifest so site admins get
+in-CMS update prompts when a new version ships.
+
+- **Download:** [mod_boothzen.zip (v0.1.0)](https://github.com/leeashcroft6126/boothzen-joomla-module/releases/download/v0.1.0/mod_boothzen.zip)
+- **Update manifest:** [joomla-mod-update.xml](https://github.com/leeashcroft6126/boothzen-joomla-module/releases/download/v0.1.0/joomla-mod-update.xml)
+- **Source:** [github.com/leeashcroft6126/boothzen-joomla-module](https://github.com/leeashcroft6126/boothzen-joomla-module)
+- **JED listing:** pending review — install via the GitHub release zip until the Joomla Extensions Directory listing is approved.
+
+## Zapier app
+
+The BoothZen Zapier app is currently in **private beta**. Zapier's public app
+directory requires ≥10 active users and ≥30 days of usage before a listing goes
+public (see `BETA_RECRUITMENT.md` in the Zapier repo for the gating policy from
+Phase 147-05). In the meantime we'll send you an invite link directly.
+
+- **Request invite:** [operations@redrawtravel.com](mailto:operations@redrawtravel.com?subject=BoothZen%20Zapier%20beta%20invite)
+- **Source:** [github.com/leeashcroft6126/boothzen-zapier](https://github.com/leeashcroft6126/boothzen-zapier)
+
+## Make.com module
+
+A complete Make.com (formerly Integromat) app packaged as an imljson tree.
+There is no public Make.com app-submission CLI yet — paste the imljson tree
+into the Make.com Apps Editor on your operator account.
+
+- **Download:** [boothzen-make-v0.1.0.zip](https://github.com/leeashcroft6126/boothzen-make/releases/download/v0.1.0/boothzen-make-v0.1.0.zip)
+- **Source:** [github.com/leeashcroft6126/boothzen-make](https://github.com/leeashcroft6126/boothzen-make)
+- **Make.com directory:** pending operator submission via the Apps Editor.
+
+## Need an API key?
+
+

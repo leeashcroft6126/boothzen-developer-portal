@@ -1,0 +1,35 @@
+# BoothZen Developer Portal
+
+> BoothZen is a multi-tenant booking management platform for photo booth operators. This portal documents the public REST API v1, OAuth 2.1 flow, webhook events, error envelope, rate limits, and the official SDKs and plugins.
+
+The API is hosted at https://app.boothzen.com/api/v1 (and the equivalent vanity host https://api.boothzen.com/v1). The OpenAPI 3.1 specification is served live at https://app.boothzen.com/api/v1/openapi.json.
+
+## Getting Started
+
+- [Quickstart](https://developers.boothzen.com/quickstart): Issue a test key and make your first API call in 5 minutes
+- [Authentication](https://developers.boothzen.com/authentication): API-key Bearer tokens and OAuth 2.1 PKCE flow
+
+## Reference
+
+- [Webhooks Reference](https://developers.boothzen.com/webhooks-reference): 13 event types, Stripe-pattern HMAC verification with timestamp tolerance, retry schedule
+- [Error Codes](https://developers.boothzen.com/error-codes): Error envelope, ID prefixes (bk_, ld_, qt_, inv_, cu_, srv_, un_), money envelope ({amount, currency})
+- [Rate Limits](https://developers.boothzen.com/rate-limits): IETF RateLimit-* response headers, per-key buckets, 429 handling
+- [Changelog](https://developers.boothzen.com/changelog): Versioned release history (v1 contract locked 2026-05-10)
+
+## Downloads
+
+- [Laravel SDK on Packagist](https://packagist.org/packages/boothzen/laravel-sdk): composer require boothzen/laravel-sdk
+- [WordPress plugin (v0.1.0)](https://github.com/leeashcroft6126/boothzen-wordpress-plugin/releases/download/v0.1.0/boothzen.zip)
+- [Joomla 5 module (v0.1.0)](https://github.com/leeashcroft6126/boothzen-joomla-module/releases/download/v0.1.0/mod_boothzen.zip)
+- [Make.com module (v0.1.0)](https://github.com/leeashcroft6126/boothzen-make/releases/download/v0.1.0/boothzen-make-v0.1.0.zip)
+- [Zapier app (private beta)](https://github.com/leeashcroft6126/boothzen-zapier): Email operations@redrawtravel.com to request an invite
+
+## API Reference
+
+- [OpenAPI 3.1 Spec (live)](https://app.boothzen.com/api/v1/openapi.json): Always-current machine-readable contract
+- [Interactive Playground](https://developers.boothzen.com/api-reference): Mintlify-rendered reference with try-it console
+
+## Optional
+
+- [Main app](https://app.boothzen.com): BoothZen operator dashboard (this is where API keys are issued at /admin/settings/api-keys)
+- [Marketing site](https://boothzen.com)
