@@ -1,0 +1,81 @@
+---
+title: "Authentication"
+description: "API-key Bearer auth and OAuth 2.1 PKCE — when to use each, and how."
+---
+
+The BoothZen public API accepts two equivalent credential types. Both grant access to the same `/api/v1/*` surface and share the same response shapes, rate-limit headers, and error envelopes.
+
+| Credential          | Best for                          | Manage in                                          |
+| ------------------- | --------------------------------- | -------------------------------------------------- |
+| API key (Bearer)    | First-party scripts, server-to-server | [admin/settings/api-keys](https://app.boothzen.com/admin/settings/api-keys) |
+| OAuth 2.1 (PKCE)    | Third-party apps acting on behalf of operators | [admin/settings/oauth-apps](https://app.boothzen.com/admin/settings/oauth-apps) |
+
+## API keys (Bearer)
+
+Send the key in the `Authorization` header on every request:
+
+```bash
+curl https://app.boothzen.com/api/v1/bookings \
+  -H "Authorization: Bearer bz_live_..."
+```
+
+Two prefixes, one binding:
+
+- `bz_live_*` — live data, real bookings, real payments.
+- `bz_test_*` — sandbox data, isolated from live. Test keys cannot read live resources and live keys cannot read test resources. There is no `?mode=` toggle.
+
+Keys are SHA-256 hashed at rest. The full secret is shown **once** on creation. If lost, revoke and re-issue from the admin UI — there is no recovery.
+
+<Card title="Manage API keys" icon="key" href="https://app.boothzen.com/admin/settings/api-keys">
+  Create, scope, rotate, and revoke keys. Every action here is audit-logged.
+</Card>
+
+### Scopes
+
+Each key carries a set of scopes (for example `read:bookings`, `write:bookings`, `read:customers`). The exact list of scopes per endpoint is part of the OpenAPI contract — see the `x-required-scopes` extension on each path in the [live spec](https://app.boothzen.com/api/v1/openapi.json) or in the [API Reference](/api-reference) tab. The portal does not duplicate this list; it changes with the spec.
+
+A request with a key that lacks the required scope returns `403` with a Stripe-shape error envelope (see [Error Codes](/error-codes)).
+
+### Inspecting the active key
+
+Every response includes:
+
+- `X-BoothZen-Scope` — the scopes granted to the calling key.
+- `X-Request-Id` — opaque request ID for support tickets.
+
+## OAuth 2.1 (PKCE) for third-party apps
+
+If you're building an app that other BoothZen operators will install (for example a calendar sync, a CRM bridge, or a marketplace), use OAuth. PKCE is **required** — there is no confidential-client flow.
+
+### Endpoints
+
+| Purpose         | URL                                                |
+| --------------- | -------------------------------------------------- |
+| Authorize       | `https://app.boothzen.com/oauth/authorize`         |
+| Token exchange  | `https://app.boothzen.com/oauth/token`             |
+| Refresh         | `https://app.boothzen.com/oauth/token` (grant_type=refresh_token) |
+
+### Flow at a glance
+
+1. Generate a PKCE `code_verifier` and SHA-256 `code_challenge`.
+2. Redirect the operator to `/oauth/authorize?response_type=code&client_id=...&redirect_uri=...&scope=...&state=...&code_challenge=...&code_challenge_method=S256`.
+3. Exchange the returned `code` for an access token at `/oauth/token` with the `code_verifier`.
+4. Use the access token in the **same** `Authorization: Bearer ...` header as an API key — OAuth tokens are interchangeable with API keys on `/api/v1/*`.
+5. Refresh tokens **rotate** on every exchange. Always store the latest one and discard the previous.
+
+<Card title="Register an OAuth app" icon="plug" href="https://app.boothzen.com/admin/settings/oauth-apps">
+  Create a client, set redirect URIs, and copy your `client_id`. Public clients (mobile, SPA) do not get a secret — PKCE is mandatory.
+</Card>
+
+## Two equivalent hostnames
+
+The public API is reachable under two equivalent base URLs:
+
+| Host pattern                              | When to use                                                              |
+| ----------------------------------------- | ------------------------------------------------------------------------ |
+| `https://app.boothzen.com/api/v1/*`       | The canonical host. Works for every tenant. Used by all docs examples. |
+| `https://{slug}.boothzen.com/api/v1/*`    | The tenant-branded host. Useful for white-label integrations where the request URL itself should reveal the operator. |
+
+Both resolve the calling tenant from the API key, not the hostname — the slug-host is purely cosmetic. All response shapes, rate limits, and scopes are identical.
+
+There is also a legacy short form, `https://api.boothzen.com/v1/*`, which is equivalent to `app.boothzen.com/api/v1/*`. New code should prefer the `app.boothzen.com` form.

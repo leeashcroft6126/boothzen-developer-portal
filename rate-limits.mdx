@@ -1,0 +1,77 @@
+---
+title: "Rate Limits"
+description: "IETF RateLimit-* headers and per-API-key buckets."
+---
+
+BoothZen enforces rate limits per API key — not per IP, not per tenant. One caller cannot exhaust another operator's budget by sharing a network. Limits apply identically to API keys and OAuth access tokens.
+
+## Headers
+
+Every `/api/v1/*` response — including errors — carries the [IETF RateLimit](https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/) headers:
+
+| Header               | Meaning                                                                  |
+| -------------------- | ------------------------------------------------------------------------ |
+| `RateLimit-Limit`    | Maximum requests permitted in the current window.                        |
+| `RateLimit-Remaining`| Requests left in the current window.                                     |
+| `RateLimit-Reset`    | Seconds until the window resets.                                         |
+
+Example response headers on a successful call:
+
+```
+HTTP/1.1 200 OK
+RateLimit-Limit: 600
+RateLimit-Remaining: 597
+RateLimit-Reset: 41
+X-BoothZen-Scope: read:bookings
+X-Request-Id: req_01HX9KAVD3JZ7P4M2N5Q6R8T9V
+Content-Type: application/json
+```
+
+## Buckets
+
+Each API key has its own bucket. The default rate is **600 requests per minute** per key (with a secondary burst limit of 60 requests per second). Internal hosts and admin tooling are not counted against your bucket — only `/api/v1/*` traffic authenticated with your key.
+
+If you need a higher limit for a legitimate use case, contact support with the `X-Request-Id` of a representative request and your average-and-peak RPS needs.
+
+The current numbers for any given key are always authoritative in the response headers — read `RateLimit-Limit` on any successful call rather than hard-coding the default. See the [API Reference](/api-reference) for live "Try it" calls.
+
+## 429 handling
+
+When the bucket is empty, the API returns `429` with a `Retry-After` header (seconds) **and** the standard rate-limit headers:
+
+```
+HTTP/1.1 429 Too Many Requests
+Retry-After: 14
+RateLimit-Limit: 600
+RateLimit-Remaining: 0
+RateLimit-Reset: 14
+Content-Type: application/json
+
+{
+  "error": {
+    "type": "rate_limit_error",
+    "code": "rate_limit_exceeded",
+    "message": "Rate limit exceeded. Retry after 14 seconds.",
+    "request_id": "req_01HX9KAVD3JZ7P4M2N5Q6R8T9V"
+  }
+}
+```
+
+Recommended client behaviour:
+
+1. Honour `Retry-After` if present. Sleep for at least that many seconds.
+2. Otherwise, exponential backoff with jitter — starting at 1s and capping at 60s — until the next attempt succeeds or `RateLimit-Remaining > 0`.
+3. Never retry tighter than `Retry-After`. Aggressive retries dig a deeper hole; the bucket only refills with time.
+
+```js
+async function callWithBackoff(fn, attempt = 0) {
+  const res = await fn();
+  if (res.status !== 429) return res;
+  const retryAfter = Number(res.headers.get('Retry-After')) || Math.min(60, 2 ** attempt);
+  const jitter = Math.random() * 500;
+  await new Promise(r => setTimeout(r, retryAfter * 1000 + jitter));
+  return callWithBackoff(fn, attempt + 1);
+}
+```
+
+For high-volume batch work, parallelise across multiple API keys (one per worker) instead of a single key — limits are per-key, so this scales linearly.

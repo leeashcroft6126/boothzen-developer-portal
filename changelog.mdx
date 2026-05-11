@@ -1,0 +1,37 @@
+---
+title: "Changelog"
+description: "API + portal release history."
+---
+
+This changelog covers the BoothZen public API (`/api/v1/*`), webhooks, and the developer-facing surface area (SDKs, plugins, portal). It follows [Keep a Changelog](https://keepachangelog.com/) conventions.
+
+<Note>
+  Future API changes will be **additive within v1** — new fields, new endpoints, new optional parameters. Breaking changes will ship as `v2` with parallel availability for at least 12 months.
+</Note>
+
+## v1.0.0 — 2026-05-10
+
+The v1 contract lock. Everything below was shipped across Phases 140 through 148 and is covered by Spectator contract tests in CI.
+
+### Added
+
+- **Public REST API v1** (Phase 140). 7 resource controllers (bookings, leads, quotes, invoices, customers, services, units) and the availability endpoint. Cursor pagination, prefixed string IDs (`bk_`, `ld_`, `qt_`, `inv_`, `cu_`, `srv_`, `un_`), `{amount, currency}` money envelopes, ISO-8601 UTC datetimes. Stripe-shape error envelopes. IETF `RateLimit-*` headers and per-API-key buckets (600/min).
+- **API key surface** (Phase 140-01). `bz_live_*` and `bz_test_*` Bearer keys with SHA-256-hashed storage, scope enforcement, and full mode isolation. Managed at [admin/settings/api-keys](https://app.boothzen.com/admin/settings/api-keys).
+- **Idempotency** (Phase 140-04). `Idempotency-Key` header on `POST`/`PATCH` with 24h Redis-backed replay cache, keyed per tenant + key.
+- **OAuth 2.1 PKCE** (Phase 141). `/oauth/authorize` + `/oauth/token` endpoints, mandatory PKCE, rotating refresh tokens, tokens interchangeable with API keys on `/api/v1/*`. Apps managed at [admin/settings/oauth-apps](https://app.boothzen.com/admin/settings/oauth-apps).
+- **Webhooks** (Phase 142). 13 fan-out events from 6 observers, Stripe-pattern HMAC-SHA256 signatures (`BoothZen-Signature: t=...,v1=...`), 5-minute tolerance window, 1m–12h exponential-backoff retries, auto-disable after 20 consecutive failures.
+- **Widget SDK polish + full-flow booking widget** (Phase 143).
+- **Laravel SDK** (Phase 144). Published to Packagist as [`boothzen/laravel-sdk`](https://packagist.org/packages/boothzen/laravel-sdk), built on Saloon v4. Includes `SignatureVerifier` helper for webhooks.
+- **WordPress plugin v0.1.0** (Phase 145). Custom post type `bz_booking`, 4 Gutenberg blocks, 4 shortcodes, Elementor + Divi bridges, webhook receiver, WP-CLI commands.
+- **Joomla 5 module v0.1.0** (Phase 146).
+- **Zapier + Make.com integrations** (Phase 147).
+- **Developer portal** at [developers.boothzen.com](https://developers.boothzen.com) (Phase 148). Live OpenAPI 3.1 spec, no spec drift, single source of truth for credentials management deep-linked to the main app.
+
+### Conventions locked in v1
+
+- Money is always `{ amount: <integer minor units>, currency: <ISO-4217> }`.
+- Datetimes are always ISO-8601 UTC with the `Z` suffix.
+- Resource IDs are always opaque strings with a stable prefix.
+- Pagination is always cursor-based (`?cursor=...&limit=25`, `next_cursor` in body).
+- Errors are always the Stripe-shape envelope (`error.type`, `error.code`, `error.message`, `error.request_id`).
+- Two equivalent hosts: `https://app.boothzen.com/api/v1/*` (canonical) and `https://{slug}.boothzen.com/api/v1/*` (tenant-branded).

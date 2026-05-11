@@ -1,0 +1,144 @@
+---
+title: "Webhooks Reference"
+description: "Subscribe to the 13 BoothZen platform events and verify signatures with Stripe-pattern HMAC."
+---
+
+Webhooks let your application react to BoothZen events in real time — a new booking, a payment received, a quote accepted. BoothZen signs every delivery so you can prove the payload came from us and hasn't been tampered with.
+
+## Subscribe
+
+Webhook subscriptions are created and managed in the admin UI. Each subscription has a target URL, an event filter (`*` or an explicit list), and its own signing secret.
+
+<Card title="Manage webhook subscriptions" icon="bolt" href="https://app.boothzen.com/admin/settings/webhooks">
+  Create endpoints, choose events, copy the signing secret. The full `whsec_*` secret is shown **once** on creation — store it somewhere safe.
+</Card>
+
+Signing secrets have the format `whsec_<56-hex-chars>` (62 characters total). Each subscription has its own secret; rotating a secret is a destructive action that invalidates the previous one.
+
+## Events
+
+Thirteen events fan out from the BoothZen observer chain. Every event delivers a JSON body with a top-level `id`, `type`, `created`, and `data.object` (the resource snapshot at the moment of the event).
+
+<AccordionGroup>
+  <Accordion title="Booking events (3)">
+    | Event                      | Fires when                                                  | Payload root                    |
+    | -------------------------- | ----------------------------------------------------------- | ------------------------------- |
+    | `booking.created`          | A new booking is inserted, by any path (admin, widget, API) | `data.object` = full Booking    |
+    | `booking.updated`          | A booking's mutable fields change (notes, dates, services)  | `data.object` = full Booking    |
+    | `booking.status_changed`   | A booking's `status` transitions (e.g. `pending` to `confirmed`) | `data.object` = Booking, `data.previous_attributes.status` = prior value |
+  </Accordion>
+  <Accordion title="Payment events (2)">
+    | Event                | Fires when                                          |
+    | -------------------- | --------------------------------------------------- |
+    | `payment.received`   | Payment recorded against an invoice or booking      |
+    | `payment.refunded`   | Refund issued (full or partial)                     |
+  </Accordion>
+  <Accordion title="Lead events (2)">
+    | Event            | Fires when                                              |
+    | ---------------- | ------------------------------------------------------- |
+    | `lead.created`   | New lead captured (widget, manual, API, embed)          |
+    | `lead.updated`   | Lead status, owner, or notes change                     |
+  </Accordion>
+  <Accordion title="Customer events (1)">
+    | Event               | Fires when                                          |
+    | ------------------- | --------------------------------------------------- |
+    | `customer.created`  | First time a customer record is created             |
+  </Accordion>
+  <Accordion title="Quote events (3)">
+    | Event              | Fires when                                       |
+    | ------------------ | ------------------------------------------------ |
+    | `quote.created`    | A new quote is generated and saved               |
+    | `quote.accepted`   | Customer accepts a quote                         |
+    | `quote.declined`   | Customer declines a quote (or it expires)        |
+  </Accordion>
+  <Accordion title="Invoice events (2)">
+    | Event           | Fires when                                       |
+    | --------------- | ------------------------------------------------ |
+    | `invoice.sent`  | Invoice issued to customer                       |
+    | `invoice.paid`  | Invoice marked fully paid                        |
+  </Accordion>
+</AccordionGroup>
+
+The exact shape of `data.object` for each resource is part of the OpenAPI contract. Browse it in the [API Reference](/api-reference) — the webhook resource shape matches the corresponding `GET /api/v1/{resource}/{id}` response.
+
+## Signature verification
+
+Every delivery carries a `BoothZen-Signature` header in Stripe's signature format:
+
+```
+BoothZen-Signature: t=1778530000,v1=5257a869e7ecebeda32affa62cdca3fa51cad7e77a0e56ff536d0ce8e108d8bd
+```
+
+- `t` — Unix timestamp (seconds) when the signature was computed.
+- `v1` — HMAC-SHA256 of the **signed payload string**, encoded as lowercase hex.
+
+The **signed payload string** is:
+
+```
+<t>.<raw-body>
+```
+
+That is: the timestamp, a literal `.`, then the raw request body bytes (do NOT parse and re-serialise — verify against the bytes you received).
+
+### Tolerance window
+
+Reject deliveries where `t` is more than **5 minutes** in the past or future (the same default Stripe uses). This stops replay attacks where an attacker re-POSTs an old signed body.
+
+### Code
+
+<CodeGroup>
+
+```php PHP
+<?php
+function verify_boothzen_webhook(string $rawBody, string $header, string $secret, int $tolerance = 300): bool {
+    if (!preg_match('/t=(\d+),v1=([a-f0-9]+)/', $header, $m)) return false;
+    [, $t, $v1] = $m;
+    if (abs(time() - (int) $t) > $tolerance) return false;
+    $expected = hash_hmac('sha256', $t . '.' . $rawBody, $secret);
+    return hash_equals($expected, $v1);
+}
+```
+
+```js Node.js
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+export function verifyBoothZenWebhook(rawBody, header, secret, tolerance = 300) {
+  const m = /t=(\d+),v1=([a-f0-9]+)/.exec(header);
+  if (!m) return false;
+  const [, t, v1] = m;
+  if (Math.abs(Date.now() / 1000 - Number(t)) > tolerance) return false;
+  const expected = createHmac('sha256', secret).update(`${t}.${rawBody}`).digest('hex');
+  return timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
+}
+```
+
+</CodeGroup>
+
+<Warning>
+  Verify against the **raw** request body. Frameworks that auto-parse JSON (Express, Laravel) reorder keys and strip whitespace — the resulting bytes will not match the signature. Capture the raw body in middleware before any parsing.
+</Warning>
+
+## Retries
+
+BoothZen retries failed deliveries (non-2xx response or connection error) with exponential backoff:
+
+| Attempt | Delay after previous |
+| ------- | -------------------- |
+| 1       | immediate            |
+| 2       | 1 minute             |
+| 3       | 5 minutes            |
+| 4       | 30 minutes           |
+| 5       | 2 hours              |
+| 6       | 12 hours             |
+
+After **20 consecutive failures** the subscription is auto-disabled and the operator receives an email with a link to re-enable it. Successful deliveries reset the failure counter to zero.
+
+Aim for a sub-3-second response time. Return `2xx` as soon as you've persisted the event; do the heavy work in a background job.
+
+## SDK helper
+
+The official Laravel SDK ships a `SignatureVerifier` helper so you don't have to copy-paste the snippets above into every project.
+
+<Card title="boothzen/laravel-sdk on Packagist" icon="box" href="https://packagist.org/packages/boothzen/laravel-sdk">
+  `composer require boothzen/laravel-sdk` — includes `BoothZen\Sdk\Webhooks\SignatureVerifier` and a Laravel middleware (`boothzen.webhook`) that verifies and rejects invalid deliveries before they reach your controller.
+</Card>

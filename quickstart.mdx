@@ -1,0 +1,90 @@
+---
+title: "Quickstart"
+description: "From zero to your first API call in 5 minutes."
+---
+
+This guide walks you from a fresh BoothZen account to a successful `GET /api/v1/bookings` call in under five minutes. No tooling beyond `curl` is required.
+
+## Step 1 — Issue a test API key
+
+API keys are managed in the BoothZen app. The portal never asks for credentials directly — every "manage keys" link in this documentation deep-links to the single source of truth in the admin UI.
+
+<Card title="Open API Keys" icon="key" href="https://app.boothzen.com/admin/settings/api-keys">
+  Issue a `bz_test_*` key with the `read:bookings` scope. The full secret is shown **once** on creation — copy it now.
+</Card>
+
+Keys come in two flavours:
+
+- `bz_live_*` — production data, real money, real bookings.
+- `bz_test_*` — sandbox data, fully isolated. Recommended for the first call.
+
+<Note>
+The mode is bound to the key itself: a `bz_test_*` key cannot read live data, and vice versa. There is no `?mode=` flag to toggle.
+</Note>
+
+## Step 2 — Make your first call
+
+Export your key and call the bookings list endpoint:
+
+```bash
+export BZ_KEY="bz_test_..."
+
+curl -sS https://app.boothzen.com/api/v1/bookings \
+  -H "Authorization: Bearer ${BZ_KEY}"
+```
+
+Or, with the key inline:
+
+```bash
+curl -sS https://app.boothzen.com/api/v1/bookings \
+  -H "Authorization: Bearer bz_test_replace_me_with_your_real_key"
+```
+
+A successful response looks like this:
+
+```json
+{
+  "data": [
+    {
+      "id": "bk_01HX9K8VAAYZWJ3M2P4Q5R6T7N",
+      "status": "confirmed",
+      "starts_at": "2026-06-14T13:00:00Z",
+      "ends_at": "2026-06-14T17:00:00Z",
+      "customer_id": "cu_01HX9K7H3D5G2N8Q4P6R7T9V1B",
+      "total": { "amount": 45000, "currency": "GBP" }
+    }
+  ],
+  "next_cursor": null
+}
+```
+
+Three things worth noting in that response:
+
+1. **Prefixed IDs.** `bk_` is a booking, `cu_` is a customer. Every public resource has a stable two-or-three-letter prefix (`bk_`, `ld_`, `qt_`, `inv_`, `cu_`, `srv_`, `un_`).
+2. **Money envelope.** `total` is always `{ amount, currency }` with `amount` in integer **minor units** (45000 = £450.00).
+3. **Cursor pagination.** `next_cursor` is `null` because this account is empty. When there's more, pass it back as `?cursor=...&limit=25`.
+
+## Step 3 — Read the API Reference
+
+Every endpoint, request body, query parameter, and response shape is documented from the live OpenAPI 3.1 spec at [`https://app.boothzen.com/api/v1/openapi.json`](https://app.boothzen.com/api/v1/openapi.json). The interactive playground in this portal lets you "Try it" against your test key without leaving the page.
+
+<Card title="API Reference" icon="code" href="/api-reference">
+  Browse all 15 paths with live request examples and response schemas.
+</Card>
+
+## Step 4 — Next steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="lock" href="/authentication">
+    API-key Bearer auth and OAuth 2.1 PKCE for third-party apps.
+  </Card>
+  <Card title="Webhooks" icon="bolt" href="/webhooks-reference">
+    Subscribe to the 13 platform events and verify signatures.
+  </Card>
+  <Card title="Error Codes" icon="triangle-exclamation" href="/error-codes">
+    Error envelope, idempotency, and the standard HTTP code surface.
+  </Card>
+  <Card title="Downloads" icon="download" href="/downloads">
+    SDKs, WordPress + Joomla plugins, Zapier and Make.com integrations.
+  </Card>
+</CardGroup>

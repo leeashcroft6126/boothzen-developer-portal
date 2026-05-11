@@ -1,0 +1,110 @@
+---
+title: "Error Codes"
+description: "Error envelope, idempotency, and the standard HTTP code surface for /api/v1/*."
+---
+
+Every `/api/v1/*` error response follows the same envelope. Codes and shapes are stable inside v1; new error types are additive only.
+
+## Error envelope
+
+```json
+{
+  "error": {
+    "type": "validation_error",
+    "code": "invalid_request",
+    "message": "The starts_at field must be a valid ISO-8601 date.",
+    "param": "starts_at",
+    "request_id": "req_01HX9KAVD3JZ7P4M2N5Q6R8T9V"
+  }
+}
+```
+
+| Field         | Always present? | Notes                                                                                       |
+| ------------- | --------------- | ------------------------------------------------------------------------------------------- |
+| `type`        | yes             | Coarse class — e.g. `validation_error`, `authentication_error`, `permission_error`, `rate_limit_error`, `api_error`. |
+| `code`        | yes             | Stable machine-readable code. Branch on this, not `message`.                                |
+| `message`     | yes             | Human-readable, English. Safe to surface in tooling, not to end users.                      |
+| `param`       | 422 only        | The offending field name when the error is a `validation_error`.                            |
+| `request_id`  | yes             | Opaque ID; quote this in support tickets. Also returned as the `X-Request-Id` response header. |
+
+## Standard HTTP codes
+
+| Status | Type                   | When                                                                  |
+| ------ | ---------------------- | --------------------------------------------------------------------- |
+| 400    | `invalid_request_error` | Malformed JSON, unsupported `?api_key=` query, missing `Content-Type`. |
+| 401    | `authentication_error`  | Missing, malformed, revoked, or unknown API key.                       |
+| 403    | `permission_error`      | Key is valid but lacks the required scope, or wrong mode (test key on live resource). |
+| 404    | `invalid_request_error` | Resource does not exist, or belongs to another tenant.                 |
+| 409    | `invalid_request_error` | Idempotency conflict — the same `Idempotency-Key` was used with a **different** body. |
+| 422    | `validation_error`      | Request shape was correct but field values failed validation. `param` names the field. |
+| 429    | `rate_limit_error`      | Per-key rate bucket exhausted. See [Rate Limits](/rate-limits) and `Retry-After`. |
+| 500    | `api_error`             | BoothZen-side fault. Safe to retry with backoff; quote `request_id`.   |
+
+## Conventions
+
+These conventions are constant across every endpoint and every webhook payload.
+
+### Money
+
+```json
+{ "amount": 12500, "currency": "GBP" }
+```
+
+`amount` is an **integer** in the smallest unit of the currency (pence for GBP, cents for USD). `currency` is an ISO-4217 three-letter code, uppercase. Never assume two decimal places — JPY has zero, BHD has three. Always divide by the minor-unit factor for the currency at display time.
+
+### Datetimes
+
+All datetimes are ISO-8601 in UTC with the `Z` suffix:
+
+```
+2026-06-14T13:00:00Z
+```
+
+There are no timezone-naive datetimes anywhere in the API. If you need to display a booking in the operator's local time, fetch the operator's timezone from `GET /api/v1/tenant` (or store it on first install) and convert client-side.
+
+### Resource IDs
+
+Every resource has a stable two-or-three-letter prefix. Treat the full ID as an opaque string — do not parse the part after the prefix.
+
+| Prefix  | Resource     |
+| ------- | ------------ |
+| `bk_`   | Booking      |
+| `ld_`   | Lead         |
+| `qt_`   | Quote        |
+| `inv_`  | Invoice      |
+| `cu_`   | Customer     |
+| `srv_`  | Service      |
+| `un_`   | Unit         |
+
+### Pagination
+
+List endpoints return:
+
+```json
+{
+  "data": [ /* … */ ],
+  "next_cursor": "eyJpZCI6ImJrXzAxSC4uLiJ9"
+}
+```
+
+Pass `next_cursor` back as `?cursor=...&limit=25` to fetch the next page. `next_cursor` is `null` on the final page. Maximum `limit` is `100`; default is `25`.
+
+## Idempotency
+
+`POST` and `PATCH` requests accept an `Idempotency-Key` header. Use a UUIDv4 (or any client-generated unique string up to 255 chars) per **logical operation**.
+
+```bash
+curl -X POST https://app.boothzen.com/api/v1/bookings \
+  -H "Authorization: Bearer bz_live_..." \
+  -H "Idempotency-Key: 8f3a2c10-9d4e-4a76-b21c-bb5a0f6e7d12" \
+  -H "Content-Type: application/json" \
+  -d '{ "service_id": "srv_...", "starts_at": "2026-06-14T13:00:00Z" }'
+```
+
+Replay rules (24-hour cache in Redis, keyed per-tenant + per-API-key):
+
+- **Same key, same body** → the original 2xx response is returned. The side-effect (booking creation, payment capture) happens exactly once.
+- **Same key, different body** → `422` with `code: "idempotency_mismatch"`. Pick a new key.
+- **Different key** → treated as a fresh request.
+
+Idempotency keys expire 24 hours after first use. Use a fresh key for any new logical operation.
