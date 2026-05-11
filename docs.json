@@ -42,5 +42,12 @@
     "socials": {
       "github": "https://github.com/leeashcroft6126"
     }
+  },
+  "metadata": {
+    "og:title": "BoothZen Developer Portal",
+    "og:description": "REST API, webhooks, SDKs, and plugins for the BoothZen booking platform.",
+    "og:image": "https://developers.boothzen.com/logo/light.svg",
+    "og:url": "https://developers.boothzen.com",
+    "twitter:card": "summary_large_image"
   }
 }
