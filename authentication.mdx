@@ -32,7 +32,7 @@ Keys are SHA-256 hashed at rest. The full secret is shown **once** on creation. 
 
 ### Scopes
 
-Each key carries a set of scopes (for example `read:bookings`, `write:bookings`, `read:customers`). The exact list of scopes per endpoint is part of the OpenAPI contract — see the `x-required-scopes` extension on each path in the [live spec](https://app.boothzen.com/api/v1/openapi.json) or in the [API Reference](/api-reference) tab. The portal does not duplicate this list; it changes with the spec.
+Each key carries a set of scopes (for example `read:bookings`, `write:bookings`, `read:customers`). The exact list of scopes per endpoint is part of the OpenAPI contract — see the `x-required-scopes` extension on each path in the [live spec](https://app.boothzen.com/api/v1/openapi.json) or in the **API Reference** tab. The portal does not duplicate this list; it changes with the spec.
 
 A request with a key that lacks the required scope returns `403` with a Stripe-shape error envelope (see [Error Codes](/error-codes)).
 
