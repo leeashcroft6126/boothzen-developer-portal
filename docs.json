@@ -12,7 +12,7 @@
     "dark": "/logo/dark.svg"
   },
   "favicon": "/favicon.svg",
-  "openapi": "https://app.boothzen.com/api/v1/openapi.json?v=2",
+  "openapi": "https://app.boothzen.com/api/v1/openapi.json",
   "navigation": {
     "tabs": [
       {
@@ -34,7 +34,7 @@
       },
       {
         "tab": "API Reference",
-        "openapi": "https://app.boothzen.com/api/v1/openapi.json?v=2"
+        "openapi": "https://app.boothzen.com/api/v1/openapi.json"
       }
     ]
   },
