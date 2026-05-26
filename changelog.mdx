@@ -9,6 +9,23 @@ This changelog covers the BoothZen public API (`/api/v1/*`), webhooks, and the d
   Future API changes will be **additive within v1** — new fields, new endpoints, new optional parameters. Breaking changes will ship as `v2` with parallel availability for at least 12 months.
 </Note>
 
+## API additions — 2026-05-26
+
+Additive extensions to v1 driven by the candidcamera-integration workstream. All backwards-compatible; existing keys keep working without changes.
+
+### Added
+
+- **`POST /api/v1/payment-intents`** — create a Stripe payment intent for an existing booking and capture the card inline using Stripe Elements (no redirect, no iframe). Requires the new `payments:write` scope. Returns `{ id, client_secret, status, amount, currency, booking_id, created_at }`.
+- **`GET /api/v1/payment-intents/{pi_id}`** — retrieve a payment intent by its Stripe id for server-side reconciliation. Requires the new `payments:read` scope. Tenant isolation: a foreign intent returns `404` to avoid revealing its existence.
+- **Two new scopes** on `ApiKey`: `payments:read`, `payments:write`. ScopeCatalog grows from 16 → 18 ids.
+- **`price_from` on `GET /api/v1/availability`** — each day in the response now carries `price_from: { amount, currency } | null` (the cheapest visible package on that date, with holiday-rule adjustment applied) so partners can render a "from £X" calendar label without a second round-trip.
+
+### Laravel SDK releases
+
+- **`boothzen/laravel-sdk` v0.2.0** — `BoothZen\Laravel\Webhooks\Events` typed constants for the 13 outbound events; `paymentIntents()->create()` resource.
+- **v0.3.0** — `me()->get()` for API-key introspection (tenant + scopes + mode); `leads()->createWithCustomer()` two-step helper for anonymous lead capture; `paymentIntents()->get()` for retrieve-by-id.
+- **v0.4.0** — `availability()->list($from, $to)` returning `list<AvailabilityDay>` with per-unit slots and the new `price_from` Money.
+
 ## v1.0.0 — 2026-05-10
 
 The v1 contract lock. Everything below was shipped across Phases 140 through 148 and is covered by Spectator contract tests in CI.

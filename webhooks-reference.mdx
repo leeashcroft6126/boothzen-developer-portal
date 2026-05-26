@@ -19,37 +19,39 @@ Signing secrets have the format `whsec_<56-hex-chars>` (62 characters total). Ea
 
 Thirteen events fan out from the BoothZen observer chain. Every event delivers a JSON body with a top-level `id`, `type`, `created`, and `data.object` (the resource snapshot at the moment of the event).
 
+The canonical list is the platform's `App\Services\Webhooks\WebhookEventCatalog`. The Laravel SDK exposes typed constants — `BoothZen\Laravel\Webhooks\Events::BOOKING_CREATED` etc. — that mirror this catalog 1:1.
+
 <AccordionGroup>
-  <Accordion title="Booking events (3)">
-    | Event                      | Fires when                                                  | Payload root                    |
-    | -------------------------- | ----------------------------------------------------------- | ------------------------------- |
-    | `booking.created`          | A new booking is inserted, by any path (admin, widget, API) | `data.object` = full Booking    |
-    | `booking.updated`          | A booking's mutable fields change (notes, dates, services)  | `data.object` = full Booking    |
-    | `booking.status_changed`   | A booking's `status` transitions (e.g. `pending` to `confirmed`) | `data.object` = Booking, `data.previous_attributes.status` = prior value |
+  <Accordion title="Booking events (4)">
+    | Event                | Fires when                                                  | Payload root                  |
+    | -------------------- | ----------------------------------------------------------- | ----------------------------- |
+    | `booking.created`    | A new booking is inserted, by any path (admin, widget, API) | `data.object` = full Booking  |
+    | `booking.updated`    | A booking's mutable fields change (notes, dates, services)  | `data.object` = full Booking  |
+    | `booking.confirmed`  | A booking moves into the `confirmed` status                 | `data.object` = full Booking  |
+    | `booking.cancelled`  | A booking is cancelled                                      | `data.object` = full Booking  |
   </Accordion>
   <Accordion title="Payment events (2)">
-    | Event                | Fires when                                          |
-    | -------------------- | --------------------------------------------------- |
-    | `payment.received`   | Payment recorded against an invoice or booking      |
-    | `payment.refunded`   | Refund issued (full or partial)                     |
-  </Accordion>
-  <Accordion title="Lead events (2)">
-    | Event            | Fires when                                              |
-    | ---------------- | ------------------------------------------------------- |
-    | `lead.created`   | New lead captured (widget, manual, API, embed)          |
-    | `lead.updated`   | Lead status, owner, or notes change                     |
-  </Accordion>
-  <Accordion title="Customer events (1)">
-    | Event               | Fires when                                          |
-    | ------------------- | --------------------------------------------------- |
-    | `customer.created`  | First time a customer record is created             |
+    | Event                | Fires when                                                                                  |
+    | -------------------- | ------------------------------------------------------------------------------------------- |
+    | `payment.received`   | Payment recorded against an invoice or booking (fires on Stripe's `payment_intent.succeeded`) |
+    | `payment.refunded`   | Refund issued (full or partial)                                                             |
   </Accordion>
   <Accordion title="Quote events (3)">
     | Event              | Fires when                                       |
     | ------------------ | ------------------------------------------------ |
     | `quote.created`    | A new quote is generated and saved               |
     | `quote.accepted`   | Customer accepts a quote                         |
-    | `quote.declined`   | Customer declines a quote (or it expires)        |
+    | `quote.declined`   | Customer declines a quote                        |
+  </Accordion>
+  <Accordion title="Lead events (1)">
+    | Event            | Fires when                                              |
+    | ---------------- | ------------------------------------------------------- |
+    | `lead.created`   | New lead captured (widget, manual, API, embed)          |
+  </Accordion>
+  <Accordion title="Customer events (1)">
+    | Event               | Fires when                                          |
+    | ------------------- | --------------------------------------------------- |
+    | `customer.created`  | First time a customer record is created             |
   </Accordion>
   <Accordion title="Invoice events (2)">
     | Event           | Fires when                                       |
@@ -58,6 +60,10 @@ Thirteen events fan out from the BoothZen observer chain. Every event delivers a
     | `invoice.paid`  | Invoice marked fully paid                        |
   </Accordion>
 </AccordionGroup>
+
+<Note>
+  There is no `payment.succeeded` or `payment.failed` event — `payment.received` is the only success signal. There is no `booking.status_changed` or `booking.completed` — use `booking.confirmed` / `booking.cancelled` for status transitions. There are no `*.updated` events for customer, lead, or invoice; only `*.created` / `invoice.sent` / `invoice.paid` fire for those resources. Availability does not emit events — derive from booking events instead.
+</Note>
 
 The exact shape of `data.object` for each resource is part of the OpenAPI contract. Browse it in the **API Reference** tab — the webhook resource shape matches the corresponding `GET /api/v1/{resource}/{id}` response.
 
